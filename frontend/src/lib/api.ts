@@ -1,0 +1,390 @@
+// ================================
+// CENTRAL API CONFIGURATION
+// ================================
+// All backend endpoints and data management
+// Replace dummy data with actual backend integration
+
+// ================================
+// TYPE DEFINITIONS
+// ================================
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  profilePic?: string;
+  dob?:string;  //yymmdd
+}
+
+export interface Present {
+  id: string;
+  type: 'text' | 'image' | 'audio' | 'video';
+  content: string;
+  image: string;
+  title: string;
+  levelId: string;
+  audio: string;
+  video: string;
+}
+
+export interface QuestionStatus {
+  completed: boolean;  // Question is fully completed & approved
+  pending: boolean;    // Question is under review
+}
+
+
+export interface Question {
+  id: string;
+  levelId: string;
+  question: string;
+  questionImage?: string;
+  status: QuestionStatus; // <-- updated field
+  attempts: number;
+  maxAttempts?: number;
+  isCompleted: boolean;
+  type: string
+}
+
+export interface Level {
+  id: string;
+  name: string;
+  isUnlocked: boolean;
+  isCompleted: boolean;
+  questions: Question[];
+  present?: Present;
+  title?: string;
+  quest?: string;
+}
+
+export interface UserProgress {
+  userId: string;
+  completedLevels: string[];
+  collectedPresents: Present[];
+  totalAttempts: number;
+}
+
+// ================================
+// DUMMY DATA STORE
+// ================================
+// This section contains all dummy data
+// Replace this entire section with backend calls
+
+
+// ================================
+// AUTHENTICATION API
+// ================================
+
+
+const BASE_URL = import.meta.env.VITE_LOCAL_URL || 'https://treasure-hunt-1-90ry.onrender.com';
+
+export const authAPI = {
+  /**
+   * Login user with credentials
+   */
+  login: async (username: string, password: string): Promise<{ user: User; token: string; refreshToken: string }> => {
+    try {
+      console.log("Attempting to login with username:", username , "at URL:", BASE_URL);
+      const response = await fetch(`${BASE_URL}/api/token/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed. Please check your credentials.');
+      }
+
+      const data = await response.json();
+      console.log("Login response data:", data);
+
+      // ✅ **Updated to use BASE_URL variable**
+      const user_response = await fetch(`${BASE_URL}/api/user/profile/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.access}`, // 🔑 Important
+        },
+      });
+
+      if (!user_response.ok) {
+        // Handle unauthorized or other errors
+        const errorData = await user_response.json();
+        throw new Error(`Error ${user_response.status}: ${errorData.detail || "Unknown error"}`);
+      }
+
+      // Parse and return user data
+      const user_data: User = await user_response.json();
+      
+      // We are returning both user and a token.
+      // The API returns access and refresh tokens. We will use the access token.
+      return { user: user_data, token: data.access, refreshToken: data.refresh };
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    }
+  },
+
+
+  signup: async (username: string, email: string, password: string): Promise<{ user: User; token: string; refreshToken: string }> => {
+    const [firstName, lastName] = username.split(" ");
+
+    const response = await fetch(`${BASE_URL}/api/register/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        password,
+        password2: password,
+        email,
+        first_name: firstName,
+        last_name: lastName || "",
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Registration failed");
+    }
+
+    const data = await response.json();
+    return { user: data.user, token: data.access, refreshToken: data.refresh };
+  },
+
+  /**
+   * Logout current user
+   */
+  logout: async (): Promise<void> => {
+    const token = localStorage.getItem("token");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (!token || !refreshToken) {
+      console.warn("No tokens found, skipping server logout.");
+      return;
+    }
+
+    const response = await fetch(`${BASE_URL}/api/logout/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Logout failed:", errorData);
+    }
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+  },
+
+  register: async (
+    username: string,
+    email: string,
+    password: string
+  ): Promise<{ user: User; token: string; refreshToken: string }> => {
+    return await authAPI.signup(username, email, password);
+  },
+
+  /**
+   * Get current user (with optional token)
+   */
+  getCurrentUser: async (token?: string): Promise<User | null> => {
+    const authToken = token || localStorage.getItem("token");
+    if (!authToken) return null;
+
+    const user_response = await fetch(`${BASE_URL}/api/user/profile/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    if (!user_response.ok) {
+      let errorData: any = {};
+      try {
+        errorData = await user_response.json();
+      } catch (_) { }
+      throw new Error(`Error ${user_response.status}: ${errorData["detail"] || "Unknown error"}`);
+    }
+
+    const user_data: User = await user_response.json();
+    return user_data;
+  },
+};
+
+
+// ================================
+// GAME API
+// ================================
+
+export const gameAPI = {
+  getLevels: async (): Promise<Level[]> => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${BASE_URL}/game/levels/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch levels");
+    console.log("Fetched levels:", await res.clone().json());
+    return res.json();
+  },
+
+  getLevel: async (levelId: string): Promise<Level> => {
+    const token = localStorage.getItem("token");
+    const numericLevelId = levelId.split("-")[1];
+    const res = await fetch(`${BASE_URL}/game/levels/${numericLevelId}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`Failed to fetch level ${levelId}`);
+    console.log(`Fetched level ${levelId}:`, await res.clone().json());
+    return res.json();
+  },
+
+  getUserProgress: async (): Promise<UserProgress> => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${BASE_URL}/game/user/progress/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch user progress");
+    console.log("Fetched user progress:", await res.clone().json());
+    return res.json();
+  },
+  
+  submitAnswer: async (questionId: string, answer: string | File): Promise<any> => {
+    const token = localStorage.getItem("token");
+
+    let body: BodyInit;
+    let headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+
+    if (answer instanceof File) {
+      // Image answer
+      const formData = new FormData();
+      formData.append("answer_image", answer);
+      body = formData;
+      console.log("[Frontend] Submitting IMAGE answer →", answer.name);
+    } else {
+      // Text answer
+      body = JSON.stringify({ answer });
+      headers["Content-Type"] = "application/json";
+      console.log("[Frontend] Submitting TEXT answer →", answer);
+    }
+
+    console.log("[Frontend] Request URL:", `${BASE_URL}/game/question/${questionId}/submit/`);
+    console.log("[Frontend] Request Headers:", headers);
+    console.log("[Frontend] Request Body (raw):", body);
+
+    const res = await fetch(`${BASE_URL}/game/question/${questionId}/submit/`, {
+      method: "POST",
+      headers,
+      body,
+    });
+
+    if (!res.ok) {
+      let errorText;
+      try {
+        errorText = await res.json();
+      } catch {
+        errorText = await res.text();
+      }
+      console.error("[Frontend] Error Response:", errorText);
+      throw new Error(errorText.detail || "Failed to submit answer");
+    }
+
+    const json = await res.json();
+    console.log("[Frontend] Response JSON:", json);
+    return json;
+  },
+
+  getCollectedPresents: async (): Promise<Present[]> => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${BASE_URL}/game/user/presents/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch collected presents");
+    console.log("Fetched collected presents:", await res.clone().json());
+    return res.json();
+  }
+
+
+
+
+};
+
+// ================================
+// API CONFIGURATION
+// ================================
+
+export const API_CONFIG = {
+  // Backend base URL (when implementing real backend)
+  // BASE_URL: process.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+
+  // API endpoints (for reference when implementing backend)
+  ENDPOINTS: {
+    AUTH: {
+      LOGIN: '/auth/login',
+      SIGNUP: '/auth/signup',
+      LOGOUT: '/auth/logout',
+      REFRESH: '/auth/refresh'
+    },
+    GAME: {
+      LEVELS: '/game/levels',
+      LEVEL_DETAIL: '/game/levels/:id',
+      SUBMIT_ANSWER: '/game/submit-answer',
+      USER_PROGRESS: '/user/progress',
+      COLLECTED_PRESENTS: '/user/presents'
+    }
+  },
+
+  // Request timeout
+  TIMEOUT: 10000,
+
+  // Retry configuration
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000
+};
+
+
+// ================================
+// SECURE IMAGE API
+// ================================
+export const imageAPI = {
+  getSecureImage: async (imageId: string, token: string): Promise<Blob> => {
+    const response = await fetch(`${BASE_URL}/game/image/${imageId}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+
+    return await response.blob(); // just return blob
+  },
+};
+
+
+export const getHint = {
+  getHintt: async (questionId: string, token: string) => {
+    const response = await fetch(`${BASE_URL}/game/question/${questionId}/hint/`, {
+      method: "POST", // ✅ Use POST
+      headers: {
+        "Content-Type": "application/json", // ✅ Required when sending JSON
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch hint: ${response.statusText}`);
+    }
+
+    return await response.json(); // ✅ Parse response as JSON
+  },
+};
