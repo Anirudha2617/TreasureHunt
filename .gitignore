@@ -1,0 +1,86 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node.js
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+.eggs/
+*.manifest
+*.spec
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python build
+build/
+develop-eggs/
+dist/
+wheels/
+pip-wheel-metadata/
+*.egg
+.installed.cfg
+
+# Django/Flask specific (if any)
+instance/
+*.pyc
+
+# Test/coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+pytest_cache/
+.pytest_cache/
+coverage.xml
+*.cover
+*.hypothesis/
+
+# Environment variables
+.envcdc
+.env.*
+*.env
+
+# Mac / Windows junk
+Thumbs.db
+ehthumbs.db
+
+
+# Django static files
+backend/staticfiles/
+
+backend/utils/credentials.json
+backend/utils/credentials_oauth.json
