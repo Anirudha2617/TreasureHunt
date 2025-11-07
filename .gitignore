@@ -84,3 +84,5 @@ backend/staticfiles/
 
 backend/utils/credentials.json
 backend/utils/credentials_oauth.json
+backend/utils/token.json
+backend/utils/mail/token.json
