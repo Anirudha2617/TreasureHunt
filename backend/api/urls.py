@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import LevelsView, LevelDetailView, UserProgressView, UserSubmitAnswer, GetHint
+from .views import LevelsView, LevelDetailView, UserProgressView, UserSubmitAnswer, GetHint, MysteryView
 
 urlpatterns = [
     path("levels/", LevelsView.as_view(), name="levels"),
@@ -7,5 +7,6 @@ urlpatterns = [
     path("user/progress/", UserProgressView.as_view(), name="user_progress"),
     path("question/<str:question_id>/submit/", UserSubmitAnswer.as_view(), name="submit_answer"),  # str instead of int
     path("question/<str:question_id>/hint/", GetHint.as_view(), name="get_hint"),  # str instead of int
+    path("mysteries/", MysteryView.as_view(), name="mysteries"),
     
 ]

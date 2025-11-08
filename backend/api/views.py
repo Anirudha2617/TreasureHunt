@@ -3,15 +3,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from .models import Level, UserProgress, Question , UserAnswer , Present, Review
+from .models import Level, UserProgress, Question , UserAnswer , Present, Review , Mystery
 import requests
-from .serializers import LevelSerializer, UserProgressSerializer, PresentSerializer, SingleLevelSerializer
+from .serializers import LevelSerializer, UserProgressSerializer, PresentSerializer, SingleLevelSerializer, MysterySerializer
 from utils.gdrive import upload_file_to_drive
 
 from django.http import HttpResponse
 from rest_framework.views import APIView
-
-
+from rest_framework.decorators import action
 from utils.image_access import image_secure_access
 import re
 
@@ -22,6 +21,7 @@ class ImageProxyView(APIView):
 
     def get(self , request , image_id):
         try:
+            # image_id = request.data.get("image_id" , image_id)
             print("Requested image_id:", image_id)
             # Fetch file bytes securely
             if "google" in image_id:
@@ -36,6 +36,33 @@ class ImageProxyView(APIView):
             print("❌ Error fetching private image:", str(e))
             return HttpResponse("Internal Server Error", status=500)
         
+        
+
+class MysteryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        mysteries = Mystery.objects.filter(is_visible = True).order_by("-starts_at")
+        serializer = MysterySerializer(mysteries, many=True, context={"request": request})
+        return Response(serializer.data)
+    
+    # @action(detail=False, methods=["post"])
+    def post(self , request ):
+        print("Got here")
+        mystery_id = request.data.get("mystery_id")
+        pin = request.data.get("pin")
+        user = request.user
+        mystery = get_object_or_404(Mystery, id=mystery_id)
+        if mystery.joining_pin == pin :
+            # logic to add user to mystery participants
+            mystery.participants.add(user)
+            mystery.save()
+            return Response({"message": "Successfully joined the mystery."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Invalid joining pin."}, status=status.HTTP_400_BAD_REQUEST)
+
+
 from django.http import HttpResponse, HttpResponseNotFound
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt

@@ -216,3 +216,23 @@ class UserProgressSerializer(serializers.ModelSerializer):
 
     def get_collectedPresents(self, obj):
         return PresentSerializer(obj.collected_presents.all(), many=True, context=self.context).data
+
+
+class MysterySerializer(serializers.ModelSerializer):
+    is_active = serializers.SerializerMethodField()
+    image = serializers.URLField(source='image_url', allow_null=True)
+    join_status = serializers.SerializerMethodField()
+    class Meta:
+        model = Mystery
+        fields = ['id', 'name' , 'description', 'image' , 'is_active', 'created_by' , 'starts_at' , 'ends_at', 'home_page' , "join_status"]
+
+    def get_is_active(self, obj):
+        return obj.is_active()
+    def get_join_status(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or user.is_anonymous:
+            return False
+        if obj.participants.filter(id=user.id).exists():
+            return True
+        return False

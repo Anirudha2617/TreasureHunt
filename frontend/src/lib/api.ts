@@ -1,12 +1,4 @@
-// ================================
-// CENTRAL API CONFIGURATION
-// ================================
-// All backend endpoints and data management
-// Replace dummy data with actual backend integration
-
-// ================================
-// TYPE DEFINITIONS
-// ================================
+import { join } from "path";
 
 export interface User {
   id: string;
@@ -63,12 +55,19 @@ export interface UserProgress {
   totalAttempts: number;
 }
 
-// ================================
-// DUMMY DATA STORE
-// ================================
-// This section contains all dummy data
-// Replace this entire section with backend calls
+export interface Mystery {
+  id: number;
+  name: string;
+  description: string;
+  created_by: string;
+  starts_at: string;
+  ends_at: string;
+  image: string;
+  is_active: boolean;
+  home_page: string;
+  join_status: boolean;
 
+}
 
 // ================================
 // AUTHENTICATION API
@@ -360,8 +359,15 @@ export const API_CONFIG = {
 // ================================
 export const imageAPI = {
   getSecureImage: async (imageId: string, token: string): Promise<Blob> => {
+    if (!token || token.trim() === "") {
+      token = localStorage.getItem("token") || "";
+    }
     const response = await fetch(`${BASE_URL}/game/image/${imageId}/`, {
-      headers: { Authorization: `Bearer ${token}` },
+      method: "GET",
+      headers: { 
+        "content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
@@ -388,3 +394,39 @@ export const getHint = {
     return await response.json(); // ✅ Parse response as JSON
   },
 };
+
+export const mysteryAPI = {
+  getMysteries: async (token:string): Promise<Mystery[]> => {
+    const response = await fetch(`${BASE_URL}/game/mysteries/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok){
+      throw new Error(`Failed to fetch mysteries: ${response.statusText}`);
+    }
+    return await response.json();
+  } , 
+
+  joinMystery: async (mysteryId: number, pin: string, token: string): Promise<{ message: string }> => {
+    const response = await fetch(`${BASE_URL}/game/mysteries/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ mystery_id: mysteryId, pin }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Throw message so toast can display it
+      throw new Error(data.message || "Failed to join mystery");
+    }
+
+    return data; // contains { "message": "Successfully joined..." }
+  },
+}

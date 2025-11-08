@@ -26,20 +26,31 @@ class LevelInline(nested_admin.NestedStackedInline):
 # --------------------------------------------------------------------
 @admin.register(Mystery)
 class MysteryAdmin(nested_admin.NestedModelAdmin):
-    list_display = ("name", "created_by", "starts_at", "ends_at", "joining_pin", "created_at")
+    list_display = ("name", "created_by", "starts_at", "ends_at", "joining_pin", "created_at","is_visible" , "image_preview" , "image_url")
     list_filter = ("created_by", "starts_at", "ends_at")
     search_fields = ("name", "description", "joining_pin")
     ordering = ("-created_at",)
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "image_preview")
     inlines = [LevelInline]
 
     fieldsets = (
-        ("Mystery Info", {"fields": ("name", "description", "home_page")}),
+        ("Mystery Info", {"fields": ("name", "description", "home_page", "image_preview" , "image" , "image_url","is_visible" )}),
         ("Creator & Timing", {"fields": ("created_by", "starts_at", "ends_at")}),
         ("Access Control", {"fields": ("joining_pin",)}),
         ("Metadata", {"fields": ("created_at",), "classes": ("collapse",)}),
     )
-
+    def image_preview(self, obj):
+        if not obj.image_url:
+            return "No image"
+        match = re.search(r"id=([^&]+)", obj.image_url)
+        if not match:
+            return "Invalid Drive URL"
+        file_id = match.group(1)
+        return format_html(
+            '<img src="/admin/image-proxy/{}" width="120" loading="lazy" style="border:1px solid #ccc; border-radius:4px"/>',
+            file_id
+        )
+    image_preview.short_description = "Image Preview"
 
 # --------------------------------------------------------------------
 # NESTED INLINES FOR LEVEL -> QUESTION -> MAILS

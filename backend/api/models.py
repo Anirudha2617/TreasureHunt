@@ -6,14 +6,33 @@ class Mystery(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_mysteries")
+    image = models.ImageField(upload_to="mysteries/", blank=True, null=True)
+    image_url = models.URLField(blank=True , null=True)
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
+    is_visible = models.BooleanField(default=True)
     joining_pin = models.CharField(max_length=20, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     home_page = models.TextField( blank=True, null=True)
+    participants = models.ManyToManyField(User, related_name="mysteries", blank=True)
 
     def __str__(self):
         return self.name
+    
+    def is_active(self):
+        from django.utils import timezone
+        now = timezone.now()
+        return self.starts_at <= now <= self.ends_at
+    
+    def save(self, *args, **kwargs):
+        if self.image :
+            print("Uploading question image to Google Drive...")
+            drive_url = upload_file_to_drive(self.image, dir_name="mysteries")
+            print("Drive URL:", drive_url)
+            self.image_url = drive_url
+            self.image.delete(save=False)  # cleanup local file
+            self.image = None
+        super().save(*args, **kwargs)
 
 
 class Level(models.Model):

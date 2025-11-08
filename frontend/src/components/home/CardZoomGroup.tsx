@@ -1,122 +1,137 @@
 import React, { useEffect, useRef, useState } from "react";
-import styled, { keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-
-/* ---------- Types ---------- */
-interface Mystery {
-  id: number;
-  name: string;
-  starts_at: string;
-  ends_at: string;
-  logo: string;
-}
+import SecureImage from "../game/SecureImage";
+import { Mystery } from "@/lib/api";
 
 interface CardZoomGroupProps {
   samples: Mystery[];
   loading?: boolean;
-  onClick?: (mystery: Mystery) => void;
+  onSubmit?: (mystery: Mystery, pin: string) => void;
 }
 
-/* ---------- Component ---------- */
 const CardZoomGroup: React.FC<CardZoomGroupProps> = ({
   samples,
   loading = false,
-  onClick,
+  onSubmit,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
   const [activeCard, setActiveCard] = useState<Mystery | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [pin, setPin] = useState("");
+  const [manualJoin, setManualJoin] = useState(false);
+  const [manualId, setManualId] = useState("");
+  const [manualPin, setManualPin] = useState("");
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      if (entries[0]) setContainerWidth(entries[0].contentRect.width);
-    });
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const skeletonCount = Math.max(1, Math.floor(containerWidth / 220));
+  const token = localStorage.getItem("token") || "";
 
   const handleCardClick = (mystery: Mystery) => {
     setActiveCard(mystery);
-    setTimeout(() => setIsFlipped(true), 300);
+    setTimeout(() => setIsFlipped(true), 500);
   };
 
   const handleClose = () => {
     setIsFlipped(false);
-    setTimeout(() => setActiveCard(null), 400);
+    setTimeout(() => setActiveCard(null), 300);
     setPin("");
+  };
+
+  const handleManualJoin = () => {
+    if (manualId && manualPin)
+      onSubmit?.({ id: Number(manualId), name: "", starts_at: "", ends_at: "", image: "" } as Mystery, manualPin);
   };
 
   return (
     <>
-      <Wrapper ref={containerRef}>
+      {/* Cards */}
+      <div ref={containerRef} className="flex flex-wrap gap-5 p-4 justify-center">
+        {/* Join Hidden Mystery Button */}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setManualJoin(true)}
+          className="w-52 h-72 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary cursor-pointer text-center text-primary font-semibold hover:bg-primary/10 transition"
+        >
+          <p>Join Hidden Mystery</p>
+        </motion.div>
+
+        {/* Mystery Cards */}
         {loading
-          ? Array.from({ length: skeletonCount }).map((_, i) => (
-              <SkeletonCard key={i} />
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-52 h-72 rounded-2xl animate-pulse bg-gradient-to-r from-muted to-card shadow"
+              />
             ))
           : samples.map((mystery) => (
-              <Card key={mystery.id} onClick={() => handleCardClick(mystery)}>
-                <img src={mystery.logo} alt={mystery.name} className="img" />
-                <div className="textBox">
-                  <p className="text head">{mystery.name}</p>
-                  <span>
-                    Starts: {new Date(mystery.starts_at).toLocaleDateString()}
-                  </span>
-                  <p className="text price">
-                    Ends: {new Date(mystery.ends_at).toLocaleDateString()}
+              <motion.div
+                key={mystery.id}
+                whileHover={{ scale: 1.05, rotate: -1 }}
+                className="relative w-52 h-72 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition cursor-pointer"
+                onClick={() => handleCardClick(mystery)}
+              >
+                {mystery.image ? (
+                  <SecureImage
+                    image_url={mystery.image}
+                    token={token}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-110 hover:blur-sm"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted text-foreground text-sm">
+                    No Image Available
+                  </div>
+                )}
+
+                {/* Dark gradient overlay */}
+                <div className="absolute bottom-0 w-full py-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-center text-white">
+                  <p className="font-semibold text-base">{mystery.name}</p>
+                  <p className="text-xs opacity-90">
+                    Open: {new Date(mystery.starts_at).toLocaleDateString()} –{" "}
+                    {new Date(mystery.ends_at).toLocaleDateString()}
                   </p>
                 </div>
-              </Card>
+              </motion.div>
             ))}
-      </Wrapper>
+      </div>
 
+      {/* Overlay */}
       <AnimatePresence>
-        {activeCard && (
-          <Overlay
-            as={motion.div}
+        {(activeCard || manualJoin) && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999]"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { duration: 0.3 } }}
-            exit={{ opacity: 0, transition: { duration: 0.25 } }}
-            onClick={handleClose}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              handleClose();
+              setManualJoin(false);
+            }}
           >
-            <ZoomedCardWrapper
-              as={motion.div}
-              initial={{ scale: 0.4, opacity: 0, rotateX: -10 }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-                rotateX: 0,
-                transition: {
-                  type: "spring",
-                  stiffness: 120,
-                  damping: 14,
-                },
-              }}
-              exit={{
-                scale: 0.5,
-                opacity: 0,
-                rotateX: 10,
-                transition: { duration: 0.35, ease: "easeInOut" },
-              }}
+            {/* Join Modal */}
+            <motion.div
+              className="relative bg-card text-card-foreground rounded-2xl shadow-xl w-80 p-6 flex flex-col items-center"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <ZoomedCard className={isFlipped ? "flipped" : ""}>
-                {/* Front */}
-                <div className="card-face front">
-                  <img src={activeCard.logo} alt={activeCard.name} />
-                  <h2>{activeCard.name}</h2>
-                </div>
-
-                {/* Back */}
-                <div className="card-face back">
-                  <h3>Join Mystery: {activeCard.name}</h3>
-                  <p>
-                    Starts:{" "}
-                    {new Date(activeCard.starts_at).toLocaleDateString()} <br />
+              {/* Card Image */}
+              {activeCard && (
+                <>
+                  {activeCard.image ? (
+                    <SecureImage
+                      image_url={activeCard.image}
+                      token={token}
+                      className="absolute inset-0 w-full h-full object-cover rounded-2xl opacity-30 blur-sm"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-muted opacity-30 rounded-2xl" />
+                  )}
+                  <h2 className="text-lg font-bold text-center z-10 mb-2">
+                    Join Mystery: {activeCard.name}
+                  </h2>
+                  <p className="text-sm z-10 mb-4 text-center">
+                    Starts: {new Date(activeCard.starts_at).toLocaleDateString()}
+                    <br />
                     Ends: {new Date(activeCard.ends_at).toLocaleDateString()}
                   </p>
                   <input
@@ -124,188 +139,52 @@ const CardZoomGroup: React.FC<CardZoomGroupProps> = ({
                     placeholder="Enter Joining Pin"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
+                    className="z-10 w-3/4 rounded-lg p-2 border border-border bg-muted text-foreground mb-3"
                   />
                   <button
                     onClick={() => {
-                      onClick?.(activeCard);
-                      console.log("Joining with pin:", pin);
+                      onSubmit?.(activeCard, pin);
                       handleClose();
                     }}
+                    className="z-10 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:scale-105 transition"
                   >
                     Join
                   </button>
-                </div>
-              </ZoomedCard>
-            </ZoomedCardWrapper>
-          </Overlay>
+                </>
+              )}
+
+              {/* Manual Join */}
+              {manualJoin && (
+                <>
+                  <h2 className="text-lg font-bold mb-4">Join Hidden Mystery</h2>
+                  <input
+                    type="text"
+                    placeholder="Mystery ID"
+                    value={manualId}
+                    onChange={(e) => setManualId(e.target.value)}
+                    className="w-3/4 rounded-lg p-2 border border-border bg-muted text-foreground mb-3"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Joining Pin"
+                    value={manualPin}
+                    onChange={(e) => setManualPin(e.target.value)}
+                    className="w-3/4 rounded-lg p-2 border border-border bg-muted text-foreground mb-3"
+                  />
+                  <button
+                    onClick={handleManualJoin}
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:scale-105 transition"
+                  >
+                    Join
+                  </button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
   );
 };
-
-/* ---------- Styled Components ---------- */
-
-const Wrapper = styled.div`
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  // justify-content: center;
-  align-items: center;
-  padding: 1%;
-`;
-
-const Card = styled.div`
-  overflow: hidden;
-  position: relative;
-  width: 200px;
-  height: 290px;
-  background: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-  border-radius: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: 0.25s ease-in-out;
-  cursor: pointer;
-  box-shadow: 0 0 12px hsl(var(--border) / 0.2);
-
-  &:hover {
-    transform: scale(1.05) rotate(-1deg);
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
-  }
-
-  .img {
-    height: 30%;
-    width: auto;
-    object-fit: contain;
-    position: absolute;
-    transition: 0.3s ease-in-out;
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  .textBox {
-    opacity: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: opacity 0.3s ease-in-out;
-    z-index: 2;
-    text-align: center;
-  }
-
-  &:hover > .textBox {
-    opacity: 1;
-  }
-
-  &:hover > .img {
-    height: 65%;
-    filter: blur(6px);
-  }
-`;
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: hsl(var(--background) / 0.7);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-`;
-
-const ZoomedCardWrapper = styled.div`
-  perspective: 1200px;
-`;
-
-const ZoomedCard = styled.div`
-  position: relative;
-  width: 300px;
-  height: 420px;
-  transform-style: preserve-3d;
-  transition: transform 0.8s ease;
-  border-radius: 20px;
-
-  &.flipped {
-    transform: rotateY(180deg);
-  }
-
-  .card-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    border-radius: 20px;
-    background: hsl(var(--card));
-    color: hsl(var(--card-foreground));
-    box-shadow: 0 0 25px hsl(var(--border) / 0.3);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    padding: 20px;
-  }
-
-  .front img {
-    width: 60%;
-    height: auto;
-  }
-
-  .back {
-    transform: rotateY(180deg);
-  }
-
-  .back input {
-    padding: 8px 12px;
-    border-radius: 10px;
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--muted));
-    color: hsl(var(--foreground));
-    width: 80%;
-  }
-
-  .back button {
-    margin-top: 10px;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    padding: 8px 16px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    transition: 0.2s ease;
-  }
-
-  .back button:hover {
-    opacity: 0.9;
-    transform: scale(1.05);
-  }
-`;
-
-/* ---------- Skeleton ---------- */
-const shimmer = keyframes`
-  0% { background-position: -200px 0; }
-  100% { background-position: 200px 0; }
-`;
-
-const SkeletonCard = styled.div`
-  width: 200px;
-  height: 290px;
-  border-radius: 20px;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--muted)) 25%,
-    hsl(var(--card)) 50%,
-    hsl(var(--muted)) 75%
-  );
-  background-size: 400% 100%;
-  animation: ${shimmer} 1.4s ease-in-out infinite;
-  box-shadow: 0 0 12px hsl(var(--border) / 0.2);
-`;
 
 export default CardZoomGroup;
