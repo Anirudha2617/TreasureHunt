@@ -11,9 +11,28 @@ from googleapiclient.errors import HttpError
 
 # --- Configuration ---
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OFFLINE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
 
-CLIENT_SECRET_FILE = 'utils/credentials_oauth.json'  # Path to OAuth credentials
-TOKEN_FILE = 'utils/mail/token.json'  # Stored token after authentication
+if OFFLINE:
+    # Local credentials
+    CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
+    TOKEN_FILE_MAIL = os.path.join(BASE_DIR, "utils/mail", "token.json")
+else:
+    # Load from environment (Render / Cloud)
+    CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
+    TOKEN_FILE_MAIL = os.path.join(BASE_DIR, "utils/mail", "token.json")
+
+    # If creds are stored as env vars (JSON string)
+    if os.getenv("GOOGLE_CREDENTIALS_JSON"):
+        with open(CLIENT_SECRETS, "w") as f:
+            f.write(os.getenv("GOOGLE_CREDENTIALS_JSON"))
+
+    if os.getenv("GOOGLE_TOKEN_JSON_MAIL"):
+        with open(TOKEN_FILE_MAIL, "w") as f:
+            f.write(os.getenv("GOOGLE_TOKEN_JSON"))
+
+
 
 
 # ---------------------------------------------------
@@ -24,20 +43,20 @@ def get_gmail_service():
     Authenticates with Google using OAuth and returns a Gmail service object.
     """
     creds = None
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    if os.path.exists(TOKEN_FILE_MAIL):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE_MAIL, SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             # Opens a browser window for the user to authenticate
-            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS, SCOPES)
             creds = flow.run_local_server(port=8080 , access_type='offline', prompt='consent')
 
         # Save the refreshed or new credentials
-        os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
-        with open(TOKEN_FILE, 'w') as token:
+        os.makedirs(os.path.dirname(TOKEN_FILE_MAIL), exist_ok=True)
+        with open(TOKEN_FILE_MAIL, 'w') as token:
             token.write(creds.to_json())
 
     return build('gmail', 'v1', credentials=creds)

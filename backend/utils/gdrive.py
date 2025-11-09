@@ -6,8 +6,25 @@ from tempfile import NamedTemporaryFile
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
-TOKEN_FILE = os.path.join(BASE_DIR, "utils", "token.json")
+OFFLINE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
+
+if OFFLINE:
+    # Local credentials
+    CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
+    TOKEN_FILE = os.path.join(BASE_DIR, "utils", "token.json")
+else:
+    # Load from environment (Render / Cloud)
+    CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
+    TOKEN_FILE = os.path.join(BASE_DIR, "utils", "token.json")
+
+    # If creds are stored as env vars (JSON string)
+    if os.getenv("GOOGLE_CREDENTIALS_JSON"):
+        with open(CLIENT_SECRETS, "w") as f:
+            f.write(os.getenv("GOOGLE_CREDENTIALS_JSON"))
+
+    if os.getenv("GOOGLE_TOKEN_JSON"):
+        with open(TOKEN_FILE, "w") as f:
+            f.write(os.getenv("GOOGLE_TOKEN_JSON"))
 
 # Google Drive folders
 DRIVE_FOLDER_ID = "11P_TvPf1U0GpPav2d8oyUgy8f-zY0mWV"
