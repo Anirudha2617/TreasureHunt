@@ -236,3 +236,14 @@ class MysterySerializer(serializers.ModelSerializer):
         if obj.participants.filter(id=user.id).exists():
             return True
         return False
+    
+
+
+
+
+
+
+#####       ----------------------------------------------------------------------
+# 🔹 SelfMystery Serialize
+# 
+# =====================================================

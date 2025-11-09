@@ -5,7 +5,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import Level, UserProgress, Question , UserAnswer , Present, Review , Mystery
 import requests
-from .serializers import LevelSerializer, UserProgressSerializer, PresentSerializer, SingleLevelSerializer, MysterySerializer
+from .serializers import LevelSerializer, UserProgressSerializer, PresentSerializer, SingleLevelSerializer, MysterySerializer 
 from utils.gdrive import upload_file_to_drive
 
 from django.http import HttpResponse
@@ -438,3 +438,35 @@ class UserSubmitAnswer(APIView):
         print("=" * 50 + "\n")
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+from .selfSerializer import FullMysterySerializer
+
+class SelfMysteries(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        print("Fetching self mysteries for user:", user)
+        mysteries = Mystery.objects.filter(created_by=user).order_by("-starts_at")
+        serializer = MysterySerializer(mysteries, many=True, context={"request": request})
+        return Response(serializer.data)
+    
+    def post(self, request):
+        mystery_id = request.data.get("mystery_id")
+        user = request.user
+        mysteries = get_object_or_404(Mystery, id=mystery_id )
+        serializer = FullMysterySerializer(mysteries)
+        return Response(serializer.data)
+    
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Mystery
+# from .serializers import FullMysterySerializer
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_mysteries(request):
+    mysteries = Mystery.objects.filter(created_by=request.user)
+    serializer = FullMysterySerializer(mysteries, many=True)
+    return Response(serializer.data)
