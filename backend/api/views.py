@@ -43,25 +43,33 @@ class MysteryView(APIView):
 
     def get(self, request):
         user = request.user
-        mysteries = Mystery.objects.filter(is_visible = True).order_by("-starts_at")
+        joined = request.query_params.get("joined")
+        print(joined , "Joined Param")
+
+        if joined and joined.lower() == "true":
+            # Get all mysteries that the user has joined
+            mysteries = Mystery.objects.filter(participants=user).order_by("-starts_at")
+            for m in mysteries:
+                print((m.name))
+        else:
+            # Get all visible mysteries
+            mysteries = Mystery.objects.filter(is_visible=True).order_by("-starts_at")
+
         serializer = MysterySerializer(mysteries, many=True, context={"request": request})
         return Response(serializer.data)
     
-    # @action(detail=False, methods=["post"])
-    def post(self , request ):
-        print("Got here")
+    def post(self, request):
         mystery_id = request.data.get("mystery_id")
         pin = request.data.get("pin")
         user = request.user
         mystery = get_object_or_404(Mystery, id=mystery_id)
-        if mystery.joining_pin == pin :
-            # logic to add user to mystery participants
+        
+        if mystery.joining_pin == pin:
             mystery.participants.add(user)
             mystery.save()
             return Response({"message": "Successfully joined the mystery."}, status=status.HTTP_200_OK)
         else:
             return Response({"message": "Invalid joining pin."}, status=status.HTTP_400_BAD_REQUEST)
-
 
 from django.http import HttpResponse, HttpResponseNotFound
 from django.views.decorators.cache import cache_page
@@ -95,17 +103,24 @@ from django.db.models import Prefetch
 class LevelsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request , mystery_id):
         user = request.user
+        mystery = get_object_or_404(Mystery, id=mystery_id)
+        if user not in mystery.participants.all():
+            return Response({"detail": "You have not joined this mystery."}, status=status.HTTP_403_FORBIDDEN)
         
         # --- Data for Level Status (from previous fix) ---
-        progress, _ = UserProgress.objects.get_or_create(user=user)
+        progress, _ = UserProgress.objects.get_or_create(user=user , mystery = mystery)
         unlocked_ids = set(progress.unlocked_levels.values_list('id', flat=True))
         completed_ids = set(progress.completed_levels.values_list('id', flat=True))
-        first_level = Level.objects.order_by("id").first()
-        first_level_id = first_level.id if first_level else None
-        if first_level_id is not None:
-            unlocked_ids.add(first_level_id)
+        levels = mystery.levels.all().order_by("id")
+        first_level = levels.first()
+        if first_level:
+            unlocked_ids.add(first_level.id)
+        for completed_id in completed_ids:
+            next_level = levels.filter(id__gt=completed_id).order_by("id").first()
+            if next_level:
+                unlocked_ids.add(next_level.id)
         
         # --- NEW: Data for Question Status ---
         
@@ -116,17 +131,17 @@ class LevelsView(APIView):
 
         # 2. Get all review statuses for this user in one query.
         #    Store in a dict for fast lookups: {question_id: status}
-        reviews = Review.objects.filter(user=user)
+        reviews = Review.objects.filter(user=user , mystery = mystery)
         review_statuses = {review.question_id: review.status for review in reviews}
 
         # --- End of New Code ---
 
-        levels = Level.objects.prefetch_related(
-            # We also prefetch questions' answers and reviews to be thorough
+        levels = Level.objects.filter(mystery=mystery).prefetch_related(
             Prefetch('questions__user_answers', queryset=UserAnswer.objects.filter(user=user)),
             Prefetch('questions__reviews', queryset=Review.objects.filter(user=user)),
             'present'
         ).order_by("id")
+
         
         # 3. Pass all the data down in the context.
         serializer_context = {
@@ -139,6 +154,7 @@ class LevelsView(APIView):
         }
 
         serializer = LevelSerializer(levels, many=True, context=serializer_context)
+        print("Serialized Levels Data:", serializer.data)
         return Response(serializer.data)
 
 
@@ -187,7 +203,7 @@ class GetHint(APIView):
                 if "google" in image_id:
                     match = re.search(r"id=([^&]+)", image_id)
                     image_id = match.group(1)
-
+                print("Fetching image for hint mail .." , image_id)
                 file_bytes, mime_type = image_secure_access(image_id)
             send(recipient_email = request.user.email , subject = mail.subject , message_text = mail.message_text , image =file_bytes , mime_type= mime_type )
             return Response({"detail": "Hint succesfully sent"}, status=status.HTTP_200_OK)
@@ -198,9 +214,9 @@ class GetHint(APIView):
 class UserProgressView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request , mystery_id):
         # ensure progress exists and initialize unlocked first level
-        progress, created = UserProgress.objects.get_or_create(user=request.user)
+        progress, created = UserProgress.objects.get_or_create(user=request.user ,  mystery_id = mystery_id)
         if created:
             first_level = Level.objects.order_by("id").first()
             if first_level:
@@ -273,9 +289,10 @@ class UserSubmitAnswer(APIView):
         print(f"[Backend] Matched Question → ID={question.id}, Text='{question.question}', Type={question.answer_type}")
 
         present_level = get_object_or_404(Level, id=question.level.id)
+        mystery = get_object_or_404(Mystery, id=present_level.mystery.id)
 
 
-        progress, _ = UserProgress.objects.get_or_create(user=request.user)
+        progress, _ = UserProgress.objects.get_or_create(user=request.user, mystery=mystery)
 
 
         # ---- Prevent duplicate correct submissions ----

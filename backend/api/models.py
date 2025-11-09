@@ -75,6 +75,7 @@ class Question(models.Model):
     answer = models.TextField(blank=True, null = True)
     answer_type = models.CharField(max_length=30, default="descriptive")  # 'text', 'image', etc.
     max_attempts = models.IntegerField(default=3)
+    # mystery = models.ForeignKey(Mystery, related_name="user_questions", on_delete=models.CASCADE )
 
     def __str__(self):
         return f"Q{self.id} - {self.level.name}"
@@ -114,11 +115,13 @@ class Present(models.Model):
 
 
 class UserProgress(models.Model):
-    user = models.OneToOneField(User, related_name="progress", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="progress", on_delete=models.CASCADE)
+    mystery = models.ForeignKey(Mystery, related_name="user_progress", on_delete=models.CASCADE)
     completed_levels = models.ManyToManyField(Level, blank=True, related_name="completed_by")
     collected_presents = models.ManyToManyField(Present, blank=True, related_name="collected_by")
     unlocked_levels = models.ManyToManyField(Level, blank=True, related_name="unlocked_by")
     total_attempts = models.IntegerField(default=0)
+    
 
     def __str__(self):
         return f"Progress of {self.user.username}"
@@ -169,6 +172,8 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(blank=True, null=True)
     reviewer = models.ForeignKey(User, null=True, blank=True, related_name="reviewed", on_delete=models.SET_NULL)
+    mystery = models.ForeignKey(Mystery, related_name="user_reviews", on_delete=models.CASCADE)
+
 
     def __str__(self):
         return f"Review for {self.question} by {self.user.username} - {self.status}"

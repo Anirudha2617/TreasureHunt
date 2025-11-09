@@ -33,7 +33,7 @@ def get_gmail_service():
         else:
             # Opens a browser window for the user to authenticate
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-            creds = flow.run_local_server(port=8080)
+            creds = flow.run_local_server(port=8080 , access_type='offline', prompt='consent')
 
         # Save the refreshed or new credentials
         os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
