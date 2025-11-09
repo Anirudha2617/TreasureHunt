@@ -24,6 +24,26 @@ export interface QuestionStatus {
   pending: boolean;    // Question is under review
 }
 
+export interface Mail {
+  id: number;
+  subject: string;
+  message_text?: string;
+  image_url?: string;
+  message?: Record<string, any>;
+}
+
+export interface Review {
+  id: number;
+  user: User;
+  question: string;
+  answer_text?: string;
+  answer_image_url?: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  reviewed_at?: string;
+  reviewer_id?: number | null;
+}
+
 
 export interface Question {
   id: string;
@@ -34,7 +54,9 @@ export interface Question {
   attempts: number;
   maxAttempts?: number;
   isCompleted: boolean;
-  type: string
+  type: string;
+  hint_mail?: Mail[];
+  answers?: { id: number; text: string }[];
 }
 
 export interface Level {
@@ -49,11 +71,22 @@ export interface Level {
 }
 
 export interface UserProgress {
-  userId: string;
+  id : number;
+  user_id: string;
   completedLevels: string[];
   collectedPresents: Present[];
   totalAttempts: number;
+  unlocked_levels: string[];
+
 }
+// export interface UserProgress {
+//   id: number;
+//   user_id: number;
+//   completed_levels: string[];
+//   unlocked_levels: string[];
+//   collected_presents: string[];
+//   total_attempts: number;
+// }
 
 export interface Mystery {
   id: number;
@@ -66,9 +99,15 @@ export interface Mystery {
   is_active: boolean;
   home_page: string;
   join_status: boolean;
+  participants: User[];
 
 }
 
+export interface MysteryDetail extends Mystery {
+  levels: Level[];
+  user_reviews: Review[];
+  user_progress: UserProgress[];
+}
 // ================================
 // AUTHENTICATION API
 // ================================
@@ -444,4 +483,38 @@ export const mysteryAPI = {
 
     return data; // contains { "message": "Successfully joined..." }
   },
+}
+
+
+export const selfMysteries = {
+  getSelfMysteries: async (token: string): Promise<Mystery[]> => {
+    const response = await fetch(`${BASE_URL}/game/mysteries/self/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok){
+      throw new Error(`Failed to fetch self mysteries: ${response.statusText}`);
+    }
+    console.log("Self Mysteries Response:", await response.clone().json());
+    return await response.json();
+  } ,
+
+  getMysteryById: async (mysteryId: number, token: string): Promise<MysteryDetail> => {
+    const response = await fetch(`${BASE_URL}/game/mysteries/self/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ mystery_id: mysteryId }),
+    });
+    if (!response.ok){
+      throw new Error(`Failed to fetch self mystery by ID: ${response.statusText}`);
+    }
+    return await response.json();
+  } ,
+  
 }

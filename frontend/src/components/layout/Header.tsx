@@ -21,6 +21,9 @@ export const Header: React.FC = () => {
   const handleBack = () => {
     navigate(-1); // Go to previous page
   };
+  const handleMyMysteries = () => {
+    navigate('/mymysteries'); // Go to previous page
+  };
 
   return (
     <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
@@ -42,6 +45,8 @@ export const Header: React.FC = () => {
               Present Hunt
             </h1>
 
+
+
             <ThemeToggle />
           </div>
 
@@ -58,6 +63,14 @@ export const Header: React.FC = () => {
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMyMysteries}
+              className="transition-smooth hover:bg-destructive hover:text-destructive-foreground"
+            >
+              MyMysteries
+            </Button>
 
             <Button
               variant="outline"
@@ -65,6 +78,7 @@ export const Header: React.FC = () => {
               onClick={handleLogout}
               className="transition-smooth hover:bg-destructive hover:text-destructive-foreground"
             >
+
               <LogOut size={16} className="mr-2" />
               Logout
             </Button>

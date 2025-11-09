@@ -11,6 +11,10 @@ import { Analytics } from "@vercel/analytics/react";
 import { Auth } from "@/pages/Auth";
 import { Home } from "@/pages/Home";
 import { Game } from "@/pages/Game";
+import MyMysteries from './pages/MyMisteries';
+import CreateMystery  from "@/pages/CreateMystery";
+import EditMystery  from "@/pages/EditMystery";
+
 // Assuming you have these pages, add them here
 // import { Questions } from "@/pages/Questions";
 // import { Present } from "@/pages/Present";
@@ -48,6 +52,9 @@ const App = () => (
               
               <Route path="/home" element={<Home />} />
               <Route path="/game" element={<Game />} />
+              <Route path="/mymysteries" element={<MyMysteries />} />
+              <Route path="/mysteries/create" element={<CreateMystery />} />
+              <Route path="/mysteries/edit" element={<EditMystery />} />
               
               {/* Add your other protected routes here */}
               {/* <Route path="/questions" element={<Questions />} /> */}
