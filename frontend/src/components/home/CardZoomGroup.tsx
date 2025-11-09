@@ -2,17 +2,20 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SecureImage from "../game/SecureImage";
 import { Mystery } from "@/lib/api";
+import { on } from "events";
 
 interface CardZoomGroupProps {
   samples: Mystery[];
   loading?: boolean;
   onSubmit?: (mystery: Mystery, pin: string) => void;
+  onClick?: (mystery: Mystery) => void;
 }
 
 const CardZoomGroup: React.FC<CardZoomGroupProps> = ({
   samples,
   loading = false,
   onSubmit,
+  onClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeCard, setActiveCard] = useState<Mystery | null>(null);
@@ -25,6 +28,7 @@ const CardZoomGroup: React.FC<CardZoomGroupProps> = ({
   const token = localStorage.getItem("token") || "";
 
   const handleCardClick = (mystery: Mystery) => {
+    onClick?.(mystery);
     setActiveCard(mystery);
     setTimeout(() => setIsFlipped(true), 500);
   };

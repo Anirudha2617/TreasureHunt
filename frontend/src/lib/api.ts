@@ -221,6 +221,17 @@ export const authAPI = {
     const user_data: User = await user_response.json();
     return user_data;
   },
+
+  refreshToken: async (refreshToken: string) => {
+    const response = await fetch(`${BASE_URL}/api/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+    if (!response.ok) throw new Error("Failed to refresh token");
+    return response.json();
+  },
+
 };
 
 
@@ -229,9 +240,9 @@ export const authAPI = {
 // ================================
 
 export const gameAPI = {
-  getLevels: async (): Promise<Level[]> => {
+  getLevels: async (mystery_id): Promise<Level[]> => {
     const token = localStorage.getItem("token");
-    const res = await fetch(`${BASE_URL}/game/levels/`, {
+    const res = await fetch(`${BASE_URL}/game/levels/${mystery_id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch levels");
@@ -250,9 +261,9 @@ export const gameAPI = {
     return res.json();
   },
 
-  getUserProgress: async (): Promise<UserProgress> => {
+  getUserProgress: async (mysteryId): Promise<UserProgress> => {
     const token = localStorage.getItem("token");
-    const res = await fetch(`${BASE_URL}/game/user/progress/`, {
+    const res = await fetch(`${BASE_URL}/game/user/progress/${mysteryId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Failed to fetch user progress");
@@ -340,7 +351,7 @@ export const API_CONFIG = {
       LEVELS: '/game/levels',
       LEVEL_DETAIL: '/game/levels/:id',
       SUBMIT_ANSWER: '/game/submit-answer',
-      USER_PROGRESS: '/user/progress',
+      USER_PROGRESS: '/user/progress/:mystery_id',
       COLLECTED_PRESENTS: '/user/presents'
     }
   },
@@ -378,7 +389,7 @@ export const imageAPI = {
 
 
 export const getHint = {
-  getHintt: async (questionId: string, token: string) => {
+  getHintt: async (questionId: string, token: string ) => {
     const response = await fetch(`${BASE_URL}/game/question/${questionId}/hint/`, {
       method: "POST", // ✅ Use POST
       headers: {
@@ -396,13 +407,17 @@ export const getHint = {
 };
 
 export const mysteryAPI = {
-  getMysteries: async (token:string): Promise<Mystery[]> => {
-    const response = await fetch(`${BASE_URL}/game/mysteries/`, {
+  getMysteries: async (token: string, joined: "true" | "false" = "false"): Promise<Mystery[]> => {
+    const url = new URL(`${BASE_URL}/game/mysteries/`);
+    url.searchParams.append("joined", joined);
+
+    const response = await fetch(url.toString(), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
+
     });
     if (!response.ok){
       throw new Error(`Failed to fetch mysteries: ${response.statusText}`);

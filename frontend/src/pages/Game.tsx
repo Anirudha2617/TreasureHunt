@@ -8,7 +8,8 @@ import { Map, Gift, Scroll, Sparkles } from 'lucide-react';
 import { Level, gameAPI, UserProgress } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+
 
 
 // -----------------------------
@@ -294,6 +295,10 @@ export const Game: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const mysteryId = location.state?.mystery_id || null;
+
+  console.log("Received mystery_id:", mysteryId);
 
   useEffect(() => {
     loadLevelsFirst();
@@ -302,12 +307,12 @@ export const Game: React.FC = () => {
   const loadLevelsFirst = async () => {
     try {
       // Step 1: Fetch levels first
-      const levelsData = await gameAPI.getLevels();
+      const levelsData = await gameAPI.getLevels(mysteryId);
       setLevels(levelsData);
       setLoading(false); // ✅ allow UI to render immediately after levels load
 
       // Step 2: Then fetch user progress (non-blocking for UI)
-      fetchUserProgress();
+      fetchUserProgress(mysteryId);
     } catch (error: any) {
       toast({
         title: 'Error loading levels',
@@ -318,14 +323,14 @@ export const Game: React.FC = () => {
     }
   };
 
-  const fetchUserProgress = async () => {
+  const fetchUserProgress = async (mysteryId) => {
     try {
-      const progressData = await gameAPI.getUserProgress();
+      const progressData = await gameAPI.getUserProgress(mysteryId);
       setUserProgress(progressData);
     } catch (error: any) {
       toast({
         title: 'Error loading progress',
-        description: error.message || 'Please try again.',
+        description: error.message || 'Please try again.',  
         variant: 'destructive',
       });
     }
@@ -368,7 +373,7 @@ const handlePostAnswer = async () => {
     }
 
     // Optional: refresh levels if user progress may have changed
-    const levelsData = await gameAPI.getLevels();
+    const levelsData = await gameAPI.getLevels(mysteryId);
     setLevels(levelsData);
     nextLevel = levels[currentIndex + 1];
     console.log("Fetched next level", nextLevel);

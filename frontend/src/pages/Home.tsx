@@ -1,133 +1,12 @@
-import React, { useState } from 'react';
-import { Countdown } from '@/components/home/Countdown';
+import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
-import { Navigate, Route } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import Quotation from '@/components/home/Quotation';
-import MysteryGrid from '@/components/home/MysteryGrid';
-import CardZoomGroup from '@/components/home/CardZoomGroup';
-import { imageAPI, mysteryAPI ,Mystery} from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import CardZoomGroup from '@/components/home/CardZoomGroup';
+import { imageAPI, mysteryAPI, Mystery } from '@/lib/api';
 
-interface HomeProps {
-}
-
-// const sampleMysteries = [
-//   {
-//     id: 1,
-//     name: "The Vanishing Cipher",
-//     starts_at: "2025-11-01T10:00:00Z",
-//     ends_at: "2025-11-10T18:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/476/476863.png",
-//   },
-//   {
-//     id: 2,
-//     name: "Echoes of the Forgotten City",
-//     starts_at: "2025-12-05T09:00:00Z",
-//     ends_at: "2025-12-15T21:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
-//   },
-//   {
-//     id: 3,
-//     name: "The Final Enigma",
-//     starts_at: "2026-01-02T12:00:00Z",
-//     ends_at: "2026-01-20T23:59:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/6062/6062644.png",
-//   },
-//   {
-//     id: 1,
-//     name: "The Vanishing Cipher",
-//     starts_at: "2025-11-01T10:00:00Z",
-//     ends_at: "2025-11-10T18:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/476/476863.png",
-//   },
-//   {
-//     id: 2,
-//     name: "Echoes of the Forgotten City",
-//     starts_at: "2025-12-05T09:00:00Z",
-//     ends_at: "2025-12-15T21:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
-//   },
-//   {
-//     id: 3,
-//     name: "The Final Enigma",
-//     starts_at: "2026-01-02T12:00:00Z",
-//     ends_at: "2026-01-20T23:59:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/6062/6062644.png",
-//   },
-//   {
-//     id: 1,
-//     name: "The Vanishing Cipher",
-//     starts_at: "2025-11-01T10:00:00Z",
-//     ends_at: "2025-11-10T18:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/476/476863.png",
-//   },
-//   {
-//     id: 2,
-//     name: "Echoes of the Forgotten City",
-//     starts_at: "2025-12-05T09:00:00Z",
-//     ends_at: "2025-12-15T21:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
-//   },
-//   {
-//     id: 3,
-//     name: "The Final Enigma",
-//     starts_at: "2026-01-02T12:00:00Z",
-//     ends_at: "2026-01-20T23:59:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/6062/6062644.png",
-//   },
-//   {
-//     id: 1,
-//     name: "The Vanishing Cipher",
-//     starts_at: "2025-11-01T10:00:00Z",
-//     ends_at: "2025-11-10T18:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/476/476863.png",
-//   },
-//   {
-//     id: 2,
-//     name: "Echoes of the Forgotten City",
-//     starts_at: "2025-12-05T09:00:00Z",
-//     ends_at: "2025-12-15T21:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
-//   },
-//   {
-//     id: 3,
-//     name: "The Final Enigma",
-//     starts_at: "2026-01-02T12:00:00Z",
-//     ends_at: "2026-01-20T23:59:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/6062/6062644.png",
-//   },
-//   {
-//     id: 1,
-//     name: "The Vanishing Cipher",
-//     starts_at: "2025-11-01T10:00:00Z",
-//     ends_at: "2025-11-10T18:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/476/476863.png",
-//   },
-//   {
-//     id: 2,
-//     name: "Echoes of the Forgotten City",
-//     starts_at: "2025-12-05T09:00:00Z",
-//     ends_at: "2025-12-15T21:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
-//   },
-//   {
-//     id: 3,
-//     name: "The Final Enigma",
-//     starts_at: "2026-01-02T12:00:00Z",
-//     ends_at: "2026-01-20T23:59:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/6062/6062644.png",
-//   },
-//   {
-//     id: 1,
-//     name: "The Vanishing Cipher",
-//     starts_at: "2025-11-01T10:00:00Z",
-//     ends_at: "2025-11-10T18:00:00Z",
-//     image: "https://cdn-icons-png.flaticon.com/512/476/476863.png",
-//   },
-
-// ]
+interface HomeProps {}
 
 declare global {
   interface Window {
@@ -137,81 +16,117 @@ declare global {
 }
 
 export const Home: React.FC<HomeProps> = () => {
-  const [isComplete, setIsComplete] = useState(false);
-  const navigate = useNavigate();
-  const [mysteries,setmysteries] = useState<Mystery[]>([]);
-  const {user} = useAuth();
+  const [Mysteries, setMysteries] = useState<Mystery[]>([]);
+  const [JoinedMysteries, setJoinedMysteries] = useState<Mystery[]>([]);
+  const [showJoined, setShowJoined] = useState(false);
+
+  const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
+  const token = localStorage.getItem('token') || '';
 
+  // Expose API for debugging (optional)
   window.imageAPI = imageAPI;
   window.mysteryAPI = mysteryAPI;
-  const token = localStorage.getItem("token") || "";
+
+  const handleNavigate = (mystery: Mystery) => {
+    if (mystery.join_status === true) {
+      navigate('/game', { state: { mystery_id: mystery.id } });
+    }
+  };
 
   const join_mystery = async (mystery: Mystery, pin: string) => {
     try {
-      // Send request
       const response = await mysteryAPI.joinMystery(mystery.id, pin, token);
 
-      // Show success toast with backend message
       toast({
-        title: "✅ Joined Successfully",
-        description: response.message || "You have successfully joined the mystery.",
-        variant: "default", // optional
+        title: '✅ Joined Successfully',
+        description: response.message || 'You have successfully joined the mystery.',
+        variant: 'default',
       });
 
-      console.log("Joined mystery successfully");
-    } catch (error: any) {
-      console.error("Error joining mystery:", error);
+      // Refresh joined mysteries
+      fetchJoinedMysteries();
 
-      // Handle failed join attempt
+      navigate('/game', { state: { mystery_id: mystery.id } });
+    } catch (error: any) {
       toast({
-        title: "❌ Joining Failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Please check your PIN and try again.",
-        variant: "destructive",
+        title: '❌ Joining Failed',
+        description: error instanceof Error ? error.message : 'Please check your PIN and try again.',
+        variant: 'destructive',
       });
     }
   };
 
-
-  React.useEffect(() => {
-    const get_mysteries = async () => {
-      try {
-        const mysteries = await mysteryAPI.getMysteries(token);
-        console.log("Fetched mysteries:", mysteries);
-        setmysteries(mysteries);
-      } catch (error) {
-        console.error("Error fetching mysteries:", error);
-      } 
-    };
-
-    get_mysteries();
-  }, []);
-
-  const handleOpenMystery = () => {
-    console.log("navigating to games ..");
-    navigate("/game");
+  // Fetch all visible mysteries
+  const fetchMysteries = async () => {
+    try {
+      const mysteries = await mysteryAPI.getMysteries(token, 'false'); // visible only
+      setMysteries(mysteries);
+    } catch (error) {
+      console.error('Error fetching mysteries:', error);
+    }
   };
+
+  // Fetch joined mysteries
+  const fetchJoinedMysteries = async () => {
+    try {
+      const joined = await mysteryAPI.getMysteries(token, 'true'); // joined=true
+      setJoinedMysteries(joined);
+      console.log("Joined Mysteries:", joined);
+    } catch (error) {
+      console.error('Error fetching joined mysteries:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMysteries();
+    fetchJoinedMysteries();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-8">
-        <div className=" mx-auto">          
-          <div className="container mx-auto px-4 py-8">          
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                GET ALL MISTRIES
-              </h1>
+        {/* All Mysteries Header + Toggle Button */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            All Mysteries
+          </h1>
+          <button
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-accent transition"
+            onClick={() => setShowJoined(!showJoined)}
+          >
+            {showJoined ? 'Hide Joined Mysteries' : 'Show Joined Mysteries'}
+          </button>
+        </div>
+
+        {/* All Mysteries Grid */}
+        <CardZoomGroup
+          samples={Mysteries}
+          loading={false}
+          onSubmit={join_mystery}
+          onClick={handleNavigate}
+        />
+
+        {/* Joined Mysteries Section */}
+        {showJoined && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Joined Mysteries</h2>
+            {JoinedMysteries.length > 0 ? (
+              <CardZoomGroup
+                samples={JoinedMysteries}
+                loading={false}
+                onSubmit={join_mystery}
+                onClick={handleNavigate}
+              />
+            ) : (
+              <p>No joined mysteries yet.</p>
+            )}
           </div>
-          <CardZoomGroup samples={mysteries}  loading={false} onSubmit={join_mystery}/>
-        </div>
-        
-        <div className="bottom">
-        </div>
+        )}
       </main>
     </div>
   );
