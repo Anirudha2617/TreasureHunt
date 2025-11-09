@@ -16,12 +16,12 @@ OFFLINE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
 
 if OFFLINE:
     # Local credentials
-    CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
-    TOKEN_FILE_MAIL = os.path.join(BASE_DIR, "utils/mail", "token.json")
+    CLIENT_SECRETS = os.path.join(BASE_DIR, "", "credentials_oauth.json")
+    TOKEN_FILE_MAIL = os.path.join(BASE_DIR, "mail", "token.json")
 else:
     # Load from environment (Render / Cloud)
-    CLIENT_SECRETS = os.path.join(BASE_DIR, "utils", "credentials_oauth.json")
-    TOKEN_FILE_MAIL = os.path.join(BASE_DIR, "utils/mail", "token.json")
+    CLIENT_SECRETS = os.path.join(BASE_DIR, "", "credentials_oauth.json")
+    TOKEN_FILE_MAIL = os.path.join(BASE_DIR, "mail", "token.json")
 
     # If creds are stored as env vars (JSON string)
     if os.getenv("GOOGLE_CREDENTIALS_JSON"):
